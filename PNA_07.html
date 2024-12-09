@@ -418,9 +418,6 @@ GeomGrad &lt;- function(k, p){
 GeomHess &lt;- function(k, p){
   (length(k) - sum(k)) / (1 - p)^2 - length(k) / p^2
 }</code></pre>
-</div>
-<div id="rozkład-poissona" class="section level3">
-<h3>Rozkład Poissona</h3>
 <hr />
 </div>
 </div>
@@ -653,9 +650,23 @@ LR &gt; critical.value</code></pre>
 <h1>Zadanie 6</h1>
 <div id="estymacja-mnw-5" class="section level3">
 <h3>Estymacja MNW</h3>
-</div>
-<div id="test-istotności-4" class="section level3">
-<h3>Test istotności</h3>
+<pre class="r"><code>contest.df &lt;- read.csv(&quot;contest_data.csv&quot;)
+
+# tylko obserwacje niezerowe
+x &lt;- contest.df[contest.df$prize &gt; 0, &quot;prize&quot;]
+
+
+maxLik(logLik = partial(NormLogLik, x = x), 
+       grad = partial(NormGrad, x = x), 
+       hess = partial(NormHess, x = x), 
+       start = c(1000,1000))</code></pre>
+<pre><code>## Maximum Likelihood estimation
+## Newton-Raphson maximisation, 17 iterations
+## Return code 8: successive function values within relative tolerance limit (reltol)
+## Log-Likelihood: -14714.23 (2 free parameter(s))
+## Estimate(s): 10211.16 10178.48</code></pre>
+<pre class="r"><code>mu &lt;- 10211.16
+sigma &lt;- 10178.48</code></pre>
 <hr />
 </div>
 </div>
@@ -663,9 +674,26 @@ LR &gt; critical.value</code></pre>
 <h1>Zadanie 7</h1>
 <div id="estymacja-mnw-6" class="section level3">
 <h3>Estymacja MNW</h3>
+<pre class="r"><code>x &lt;- c(0.62,-2.52,-0.31,-0.73,2.54,-1.52,-1.18,2.06,2.53,2.52,0.66,0.02,-0.93,-0.09,0.81 -1.60,2.70,0.52,1.75,-0.79,3.66,-1.05,-1.32,-2.42,0.41,-2.09,2.67,1.36,0.94,0.58,-0.40,1.91,0.18,1.41,4.56,-0.01,-1.60,-0.07,1.79,2.23,0.52,-2.81,-1.74,0.71,2.09,2.25,1.33,0.37,-2.04,2.29)
+
+maxLik(logLik = function(mu) {NormLogLik(x = x, c(mu, 2))}, 
+       start = 0)</code></pre>
+<pre><code>## Maximum Likelihood estimation
+## Newton-Raphson maximisation, 2 iterations
+## Return code 1: gradient close to zero (gradtol)
+## Log-Likelihood: -96.96073 (1 free parameter(s))
+## Estimate(s): 0.4646939</code></pre>
+<pre class="r"><code>mu &lt;- 0.4646939</code></pre>
 </div>
-<div id="test-istotności-5" class="section level3">
+<div id="test-istotności-4" class="section level3">
 <h3>Test istotności</h3>
+<p>Test istotności - model I (wariancja znana) Statystyka testowa: U
+hipoteza zerowa: mu = 0</p>
+<pre class="r"><code>U &lt;- (mu - 0) / 1 * sqrt(length(x))
+p.value &lt;- 2*(1 - pnorm(U)) 
+p.value</code></pre>
+<pre><code>## [1] 0.001142509</code></pre>
+<pre class="r"><code># p-value = 0.001142509 &lt; 0.05 zatem odrzucamy H0</code></pre>
 <hr />
 </div>
 </div>
@@ -673,9 +701,35 @@ LR &gt; critical.value</code></pre>
 <h1>Zadanie 8</h1>
 <div id="estymacja-mnw-7" class="section level3">
 <h3>Estymacja MNW</h3>
-</div>
-<div id="test-istotności-6" class="section level3">
-<h3>Test istotności</h3>
+<pre class="r"><code>TruncNormLogDensity &lt;- function(x, mu, sigma){
+  if (x &lt; 0) {
+    return(0)
+  } else if (x == 0) {
+    return(log(1 - pnorm(mu/sigma, mean = 0, sd = 1)))
+  } else {
+    return(-0.5*log(2*pi) - log(sigma) - 0.5*(x-mu)^2/sigma^2)
+  }
+}
+
+TruncNormLogLik &lt;- function(x, param){
+  mu &lt;- param[[1]]
+  sigma &lt;- param[[2]]
+  return(sum(sapply(x, TruncNormLogDensity, mu = mu, sigma = sigma)))
+}
+
+# tylko obserwacje niezerowe
+x &lt;- contest.df[contest.df$prize &gt; 0, &quot;prize&quot;]
+
+maxLik(logLik = partial(TruncNormLogLik, x = x), 
+       start = c(10000, 10000))</code></pre>
+<pre><code>## Maximum Likelihood estimation
+## Newton-Raphson maximisation, 8 iterations
+## Return code 8: successive function values within relative tolerance limit (reltol)
+## Log-Likelihood: -14714.23 (2 free parameter(s))
+## Estimate(s): 10210.21 10179.08</code></pre>
+<p><strong>Uwaga</strong> - optymalizacja jest wrażliwa na dobór miejsca
+startowego. Dopiero parametry początkowe o podobnej wartości do
+oszacowanych wcześniej w zadaniu 6 dają podobne rezultaty.</p>
 </div>
 </div>
 

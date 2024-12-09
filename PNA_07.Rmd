@@ -69,12 +69,6 @@ GeomHess <- function(k, p){
 }
 ```
 
-### Rozkład Poissona
-
-```{r poiss.log.lik}
-
-```
-
 --- 
 
 # Zadanie 1
@@ -286,16 +280,20 @@ LR > critical.value
 ### Estymacja MNW
 
 ```{r Zad6.max.lik}
+contest.df <- read.csv("contest_data.csv")
 
+# tylko obserwacje niezerowe
+x <- contest.df[contest.df$prize > 0, "prize"]
+
+
+maxLik(logLik = partial(NormLogLik, x = x), 
+       grad = partial(NormGrad, x = x), 
+       hess = partial(NormHess, x = x), 
+       start = c(1000,1000))
+
+mu <- 10211.16
+sigma <- 10178.48
 ```
-
-
-### Test istotności
-
-```{r Zad6.test}
-
-```
-
 
 ---
 
@@ -304,13 +302,27 @@ LR > critical.value
 ### Estymacja MNW
 
 ```{r Zad7.max.lik}
+x <- c(0.62,-2.52,-0.31,-0.73,2.54,-1.52,-1.18,2.06,2.53,2.52,0.66,0.02,-0.93,-0.09,0.81 -1.60,2.70,0.52,1.75,-0.79,3.66,-1.05,-1.32,-2.42,0.41,-2.09,2.67,1.36,0.94,0.58,-0.40,1.91,0.18,1.41,4.56,-0.01,-1.60,-0.07,1.79,2.23,0.52,-2.81,-1.74,0.71,2.09,2.25,1.33,0.37,-2.04,2.29)
+
+maxLik(logLik = function(mu) {NormLogLik(x = x, c(mu, 2))}, 
+       start = 0)
+
+mu <- 0.4646939
 
 ```
 
 
 ### Test istotności
 
+Test istotności - model I (wariancja znana)
+Statystyka testowa: U
+hipoteza zerowa: mu = 0
+
 ```{r Zad7.test}
+U <- (mu - 0) / 1 * sqrt(length(x))
+p.value <- 2*(1 - pnorm(U)) 
+p.value
+# p-value = 0.001142509 < 0.05 zatem odrzucamy H0
 
 ```
 
@@ -322,15 +334,33 @@ LR > critical.value
 ### Estymacja MNW
 
 ```{r Zad8.max.lik}
+TruncNormLogDensity <- function(x, mu, sigma){
+  if (x < 0) {
+    return(0)
+  } else if (x == 0) {
+    return(log(1 - pnorm(mu/sigma, mean = 0, sd = 1)))
+  } else {
+    return(-0.5*log(2*pi) - log(sigma) - 0.5*(x-mu)^2/sigma^2)
+  }
+}
+
+TruncNormLogLik <- function(x, param){
+  mu <- param[[1]]
+  sigma <- param[[2]]
+  return(sum(sapply(x, TruncNormLogDensity, mu = mu, sigma = sigma)))
+}
+
+# tylko obserwacje niezerowe
+x <- contest.df[contest.df$prize > 0, "prize"]
+
+maxLik(logLik = partial(TruncNormLogLik, x = x), 
+       start = c(10000, 10000))
 
 ```
 
+**Uwaga** - optymalizacja jest wrażliwa na dobór miejsca startowego. Dopiero parametry początkowe o podobnej wartości do oszacowanych wcześniej w zadaniu 6 dają podobne rezultaty. 
 
-### Test istotności
 
-```{r Zad8.test}
-
-```
 
 
 
